@@ -1,0 +1,39 @@
+import cookieParser from "cookie-parser";
+import express from "express";
+import cors from "cors";
+const noCache = (req, res, next) => {
+  res.set({
+    "Cache-Control": "no-store, no-cache, must-revalidate, proxy-revalidate",
+    Pragma: "no-cache",
+    Expires: "0",
+    "Surrogate-Control": "no-store",
+  });
+  next();
+};
+const app = express();
+app.use(noCache);
+app.use(express.json());
+app.use(cors());
+app.use(cookieParser());
+
+app.get("/health", (req, res) => {
+  res.send({ message: "Server is up" });
+});
+
+// Router Imports
+import authRouter from "./routes/auth.route.js";
+import budgetRouter from "./routes/budget.route.js";
+import categoryRouter from "./routes/category.route.js";
+import expenseRouter from "./routes/expense.route.js";
+
+// App Routes
+app.use("/api", authRouter);
+app.use("/api/budget", budgetRouter);
+app.use("/api/category", categoryRouter);
+app.use("/api/expense", expenseRouter);
+
+// Error Handler
+import { errorHandler } from "./utils/handler.js";
+app.use(errorHandler);
+
+export default app;
