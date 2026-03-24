@@ -36,26 +36,119 @@ export const addExpenseService = async (req) => {
   const month = parsedDate.getMonth() + 1;
   const year = parsedDate.getFullYear();
 
-  let expense = await Expense.findOne({ userId, category, month, year });
-
-  if (expense) {
-    expense.amount += Number(amount);
-    await expense.save();
-  } else {
-    expense = await Expense.create({
-      userId,
-      amount,
-      category,
-      description,
-      date: parsedDate,
-      month,
-      year,
-    });
-  }
+  let expense = await Expense.create({
+    userId,
+    amount,
+    category,
+    description,
+    date: parsedDate,
+    month,
+    year,
+  });
 
   return {
     status: 200,
     message: "expense created successfully",
     data: expense,
+  };
+};
+
+export const allExpensesService = async (req) => {
+  let { page, pageSize, category, month, year } = req.query;
+
+  page = parseInt(page) || 1;
+  pageSize = parseInt(pageSize) || 15;
+  const skip = (page - 1) * pageSize;
+
+  if (month === undefined || month === "") {
+    throw new AppError("Month is required", 400);
+  }
+  month = Number(month);
+  if (isNaN(month)) {
+    throw new AppError("Month must be valid number", 400);
+  }
+
+  if (month <= 0 || month > 12) {
+    throw new AppError("Month must be between 1 and 12", 400);
+  }
+
+  if (year === undefined || year === "") {
+    throw new AppError("Year is required", 400);
+  }
+
+  year = Number(year);
+
+  if (isNaN(year)) {
+    throw new AppError("Year must be valid number", 400);
+  }
+
+  const queryObj = {
+    month,
+    year,
+  };
+
+  if (category) {
+    queryObj.category = category;
+  }
+
+  const expenses = await Expense.find(queryObj)
+    .populate("category", "-userId -createdAt -updatedAt")
+    .sort({ createdAt: -1 })
+    .skip(skip)
+    .limit(pageSize)
+    .select("-userId -createdAt -updatedAt");
+
+  console.log(expenses);
+
+  if (!expenses.length) {
+    return {
+      status: 200,
+      message: "No expenses",
+      data: {
+        expenses: [],
+        page,
+        pageSize,
+        totalPages: 1,
+        totalRecords: 0,
+      },
+    };
+  }
+
+  const totalRecords = await Expense.countDocuments(queryObj);
+
+  return {
+    status: 200,
+    message: "Expenses Fetched successfully",
+    data: {
+      expenses,
+      page,
+      pageSize,
+      totalPages: Math.ceil(totalRecords / pageSize),
+      totalRecords,
+    },
+  };
+};
+
+export const deleteExpenseService = async (req) => {
+  const id = req.params.id;
+
+  if (!id) {
+    throw new AppError("Expense ID is required", 400);
+  }
+
+  if (!mongoose.isValidObjectId(id)) {
+    throw new AppError(`Invalid Expense ID: ${id}`, 409);
+  }
+
+  const deletedExpense = await Expense.findByIdAndDelete(id);
+
+  if (!deletedExpense) {
+    throw new AppError(`Expense not found`, 404);
+  }
+
+  return {
+    status: 200,
+    message: "Expense Deleted Successfully",
+    data: deletedExpense,
   };
 };

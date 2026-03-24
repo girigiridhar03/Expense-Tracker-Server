@@ -97,7 +97,7 @@ export const getCategoriesWithBudgetService = async (req) => {
   let categories = await Category.find({
     $or: [{ userId: null }, { userId }],
   })
-    .select("-createdAt -updatedAt")
+    .select("-createdAt -updatedAt -userId")
     .lean();
 
   if (!categories?.length) {

@@ -25,12 +25,14 @@ import authRouter from "./routes/auth.route.js";
 import budgetRouter from "./routes/budget.route.js";
 import categoryRouter from "./routes/category.route.js";
 import expenseRouter from "./routes/expense.route.js";
+import dashboardRouter from "./routes/dashboard.route.js";
 
 // App Routes
 app.use("/api", authRouter);
 app.use("/api/budget", budgetRouter);
 app.use("/api/category", categoryRouter);
 app.use("/api/expense", expenseRouter);
+app.use("/api/dashboard", dashboardRouter);
 
 // Error Handler
 import { errorHandler } from "./utils/handler.js";

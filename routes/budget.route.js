@@ -10,6 +10,8 @@ const budgetRouter = express.Router();
 
 budgetRouter.get("/", authMiddleware, getBudget);
 budgetRouter.post("/", authMiddleware, createBudget);
+
+// Dynamic Routes
 budgetRouter.patch("/:id", authMiddleware, editBudget);
 
 export default budgetRouter;

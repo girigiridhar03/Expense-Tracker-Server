@@ -31,7 +31,7 @@ export const createBudgetService = async (req) => {
   }
 
   if (categoryId && !mongoose.isValidObjectId(categoryId)) {
-    throw new AppError(`Invalid CategoryId: ${categoryId}`);
+    throw new AppError(`Invalid CategoryId: ${categoryId}`, 409);
   }
   const query = {
     userId: req.user.id,
@@ -70,7 +70,7 @@ export const editBudgetService = async (req) => {
   }
 
   if (!mongoose.isValidObjectId(id)) {
-    throw new AppError(`Invalid ID: ${id}`, 400);
+    throw new AppError(`Invalid ID: ${id}`, 409);
   }
 
   if (amount === undefined || isNaN(Number(amount))) {
