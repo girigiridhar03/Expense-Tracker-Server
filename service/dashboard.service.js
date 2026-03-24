@@ -1,14 +1,18 @@
 import mongoose from "mongoose";
 import Budget from "../model/budget.model.js";
 import Expense from "../model/expense.model.js";
+import { budgetUtils, todayDate } from "../utils/utils.js";
 
 export const budgetMetricService = async (req) => {
   const userId = req.user.id;
-  const todaysDate = new Date();
-  const month = Number(todaysDate.getMonth() + 1);
-  const year = Number(todaysDate.getFullYear());
+  const { month, year } = todayDate();
 
-  const budget = await Budget.findOne({ userId, month, year });
+  const budget = await Budget.findOne({
+    userId,
+    month,
+    year,
+    categoryId: { $eq: null },
+  });
   const expense = await Expense.aggregate([
     {
       $match: {
@@ -79,5 +83,97 @@ export const budgetMetricService = async (req) => {
       percentage: Math.floor(expenseMetric.percentage || 0),
       categoriesUsed: expenseMetric.categoriesUsed || 0,
     },
+  };
+};
+
+export const budgetOverviewService = async (req) => {
+  const userId = req.user.id;
+  const { month, year } = todayDate();
+
+  const budgetDetails = await budgetUtils({
+    Budget,
+    Expense,
+    userId,
+    month,
+    year,
+  });
+
+  const allocatedCategoriesBudget = await Budget.aggregate([
+    {
+      $match: {
+        userId: new mongoose.Types.ObjectId(userId),
+        month,
+        year,
+        categoryId: {
+          $ne: null,
+        },
+      },
+    },
+    {
+      $group: {
+        _id: "$categoryId",
+        allocatedAmount: { $sum: "$amount" },
+      },
+    },
+  ]);
+
+  return {
+    status: 200,
+    message: "Budget Overview Fetched Successfully",
+    data: {
+      amount: budgetDetails?.amount,
+      totalSpent: budgetDetails?.totalSpent,
+      remaining: budgetDetails?.remaining,
+      percentage: budgetDetails?.percentage,
+      allocatedAmount: allocatedCategoriesBudget?.[0]?.allocatedAmount || 0,
+    },
+  };
+};
+
+export const pieCategoriesService = async (req) => {
+  const userId = req.user.id;
+  const { month, year } = todayDate();
+
+  const categories = await Expense.aggregate([
+    {
+      $match: {
+        userId: new mongoose.Types.ObjectId(userId),
+        month,
+        year,
+      },
+    },
+    {
+      $lookup: {
+        from: "categories",
+        localField: "category",
+        foreignField: "_id",
+        as: "categoryDetails",
+      },
+    },
+    {
+      $unwind: "$categoryDetails",
+    },
+    {
+      $group: {
+        _id: {
+          id: "$categoryDetails._id",
+          name: "$categoryDetails.categoryName",
+        },
+        totalAmount: { $sum: "$amount" },
+      },
+    },
+    {
+      $project: {
+        _id: "$_id.id",
+        name: "$_id.name",
+        totalAmount: 1,
+      },
+    },
+  ]);
+
+  return {
+    status: 200,
+    message: "Fetched Categories Details Successfully",
+    data: categories,
   };
 };

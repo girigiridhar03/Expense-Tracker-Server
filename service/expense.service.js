@@ -93,12 +93,10 @@ export const allExpensesService = async (req) => {
 
   const expenses = await Expense.find(queryObj)
     .populate("category", "-userId -createdAt -updatedAt")
-    .sort({ createdAt: -1 })
+    .sort({ createdAt: -1, category: 1 })
     .skip(skip)
     .limit(pageSize)
     .select("-userId -createdAt -updatedAt");
-
-  console.log(expenses);
 
   if (!expenses.length) {
     return {

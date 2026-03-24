@@ -2,6 +2,7 @@ import mongoose from "mongoose";
 import { AppError } from "../utils/AppError.js";
 import Budget from "../model/budget.model.js";
 import Expense from "../model/expense.model.js";
+import { budgetUtils } from "../utils/utils.js";
 
 export const createBudgetService = async (req) => {
   const { categoryId, amount, month, year } = req.body;
@@ -129,39 +130,11 @@ export const getBudgetService = async (req) => {
     throw new AppError("Year must be valid number", 400);
   }
 
-  const budget = await Budget.findOne({ userId, month, year })
-    .select("amount month year")
-    .lean();
-  const spent = await Expense.aggregate([
-    {
-      $match: {
-        userId: new mongoose.Types.ObjectId(userId),
-        month,
-        year,
-      },
-    },
-    {
-      $group: {
-        _id: null,
-        totalSpent: {
-          $sum: "$amount",
-        },
-      },
-    },
-  ]);
+  const data = await budgetUtils({ Budget, Expense, userId, month, year });
 
   return {
     status: 200,
     message: "Budget fetched successfully",
-    data: {
-      amount: budget?.amount ?? 0,
-      month,
-      year,
-      totalSpent: spent?.[0]?.totalSpent ?? 0,
-      remaining: (budget?.amount ?? 0) - (spent?.[0]?.totalSpent ?? 0),
-      percentage: budget?.amount
-        ? ((spent?.[0]?.totalSpent ?? 0) / budget.amount) * 100
-        : 0,
-    },
+    data,
   };
 };
