@@ -26,26 +26,33 @@ export const budgetMetricService = async (req) => {
         _id: null,
         totalSpent: { $sum: "$amount" },
         categories: { $addToSet: "$category" },
+        totalTransactions: { $sum: 1 },
+      },
+    },
+    {
+      $addFields: {
+        budgetAmount: budget?.amount || 0,
       },
     },
     {
       $project: {
         _id: 0,
         totalSpent: 1,
+        totalTransactions: 1,
         categoriesUsed: { $size: "$categories" },
         remaining: {
-          $subtract: [budget.amount, "$totalSpent"],
+          $subtract: ["$budgetAmount", "$totalSpent"],
         },
         percentage: {
           $cond: {
-            if: { $eq: [budget.amount, 0] },
+            if: { $eq: ["$budgetAmount", 0] },
             then: 0,
             else: {
               $multiply: [
                 {
                   $divide: [
-                    { $subtract: [budget.amount, "$totalSpent"] },
-                    budget.amount,
+                    { $subtract: ["$budgetAmount", "$totalSpent"] },
+                    "$budgetAmount",
                   ],
                 },
                 100,
@@ -67,6 +74,7 @@ export const budgetMetricService = async (req) => {
         remaining: 0,
         percentage: 0,
         categoriesUsed: 0,
+        transaction: 0,
       },
     };
   }
@@ -82,6 +90,7 @@ export const budgetMetricService = async (req) => {
       remaining: expenseMetric.remaining || 0,
       percentage: Math.floor(expenseMetric.percentage || 0),
       categoriesUsed: expenseMetric.categoriesUsed || 0,
+      totalTransactions: expenseMetric.totalTransactions || 0,
     },
   };
 };
