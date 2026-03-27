@@ -11,9 +11,16 @@ const noCache = (req, res, next) => {
   next();
 };
 const app = express();
+const allowedOrigin = ["http://localhost:5173"];
 app.use(noCache);
 app.use(express.json());
-app.use(cors());
+app.use(
+  cors({
+    origin: allowedOrigin,
+    methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+    credentials: true,
+  }),
+);
 app.use(cookieParser());
 
 app.get("/health", (req, res) => {

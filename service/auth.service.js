@@ -3,7 +3,13 @@ import { AppError } from "../utils/AppError.js";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 
-export const registrationService = async (req) => {
+const cookieOptions = {
+  httpOnly: true,
+  secure: process.env.NODE_ENV === "production",
+  sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
+};
+
+export const registrationService = async (req, res) => {
   const { username, email, password } = req.body;
 
   const requiredFields = ["username", "email", "password"];
@@ -28,6 +34,12 @@ export const registrationService = async (req) => {
     email,
     password: hashPassword,
   });
+
+  const token = jwt.sign({ id: newUser._id }, process.env.JWT_SECRET, {
+    expiresIn: "1d",
+  });
+
+  res.cookie("token", token, cookieOptions);
 
   return {
     status: 201,
@@ -65,14 +77,45 @@ export const loginService = async (req, res) => {
     expiresIn: "1d",
   });
 
-  res.cookie("token", token, {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
-    sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
-  });
+  res.cookie("token", token, cookieOptions);
 
   return {
     status: 200,
     message: "logged in successfully",
+    data: {
+      user: {
+        id: userExist._id,
+        username: userExist.username,
+        email: userExist.email,
+      },
+    },
+  };
+};
+
+export const authCheckService = async (req) => {
+  const user = await User.findById(req.user.id).select("_id username email");
+
+  if (!user) {
+    throw new AppError("Unauthorized", 401);
+  }
+
+  return {
+    status: 200,
+    message: "Authenticated",
+    data: {
+      user: {
+        id: user._id,
+        username: user.username,
+        email: user.email,
+      },
+    },
+  };
+};
+
+export const authLogoutService = async (res) => {
+  res.clearCookie("token");
+  return {
+    status: 200,
+    message: "Logout successfully",
   };
 };
