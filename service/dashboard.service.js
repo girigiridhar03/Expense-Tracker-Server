@@ -158,6 +158,7 @@ export const pieCategoriesService = async (req) => {
         _id: {
           id: "$categoryDetails._id",
           name: "$categoryDetails.categoryName",
+          color: "$categoryDetails.bgColor",
         },
         totalAmount: { $sum: "$amount" },
       },
@@ -166,6 +167,7 @@ export const pieCategoriesService = async (req) => {
       $project: {
         _id: "$_id.id",
         name: "$_id.name",
+        color: "$_id.color",
         totalAmount: 1,
       },
     },
