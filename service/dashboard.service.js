@@ -74,7 +74,7 @@ export const budgetMetricService = async (req) => {
         remaining: 0,
         percentage: 0,
         categoriesUsed: 0,
-        transaction: 0,
+        totalTransactions: 0,
       },
     };
   }
